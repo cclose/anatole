@@ -37,9 +37,18 @@
 
 
   <!-- CSS -->
+  {{ $scssTranspiler := "libsass" }}
+  {{ if .Site.Params.useDartSass }}
+    {{ $scssTranspiler = "dartsass" }}
+  }}
+  {{ end }}
+
   {{ if eq .Site.Language.LanguageDirection "rtl" }}
     {{ $sassTemplate := resources.Get "scss/anatole.rtl.scss" }}
-    {{ $style := $sassTemplate | resources.ExecuteAsTemplate "scss/main.rtl.scss" . | resources.ToCSS | resources.Minify | resources.Fingerprint }}
+    {{ $style := $sassTemplate | resources.ExecuteAsTemplate "scss/main.rtl.scss" . | css.Sass (dict
+      "transpiler" $scssTranspiler
+      "enableSourceMap" (not hugo.IsProduction)
+    ) | minify | fingerprint }}
     <link
       rel="stylesheet"
       href="{{ $style.RelPermalink }}"
@@ -49,7 +58,10 @@
     />
   {{ else }}
     {{ $sassTemplate := resources.Get "scss/anatole.scss" }}
-    {{ $style := $sassTemplate | resources.ExecuteAsTemplate "scss/main.scss" . | resources.ToCSS | resources.Minify | resources.Fingerprint }}
+    {{ $style := $sassTemplate | resources.ExecuteAsTemplate "scss/main.scss" . | css.Sass (dict
+      "transpiler" $scssTranspiler
+      "enableSourceMap" (not hugo.IsProduction)
+    ) | minify | fingerprint }}
     <link
       rel="stylesheet"
       href="{{ $style.RelPermalink }}"
@@ -76,6 +88,19 @@
       integrity="{{ $styles.Data.Integrity }}"
       crossorigin="anonymous"
       media="screen"
+    />
+  {{ end }}
+  {{ range .Site.Params.customSCSS }}
+    {{ $customSCSSTemplate := resources.Get . }}
+    {{ $cstyle := $customSCSSTemplate | css.Sass (dict
+      "transpiler" $scssTranspiler
+      "enableSourceMap" (not hugo.IsProduction)
+    ) | minify | fingerprint }}
+    <link 
+      rel="stylesheet"
+      href="{{ $cstyle.RelPermalink }}" 
+      integrity="{{ $cstyle.Data.Integrity }}" 
+      crossorigin="anonymous"
     />
   {{ end }}
   {{ $style := resources.Get "fontawesome/css/fontawesome.min.css" | resources.Fingerprint }}
